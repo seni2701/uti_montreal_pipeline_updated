@@ -1,0 +1,66 @@
+@"
+# Identifiants et configuration privée
+.env
+.env.*
+!.env.example
+secrets/
+credentials/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Environnements Python
+.venv/
+venv/
+env/
+
+# Données volumineuses
+data/raw/
+data/interim/
+data/temp/
+data/cache/
+
+*.laz
+*.las
+*.copc.laz
+*.zip
+*.7z
+
+# Bases et sorties géospatiales volumineuses
+*.gpkg
+*.sqlite
+*.db
+*.dump
+*.backup
+
+# Rasters
+*.tif
+*.tiff
+*.vrt
+*.img
+*.aux.xml
+*.ovr
+
+# Fichiers QGIS temporaires
+*.qgz~
+*.qgs~
+*.qml~
+.qgis/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Journaux
+*.log
+logs/
+
+# Sorties temporaires
+outputs/temp/
+tmp/
+"@ | Set-Content -Encoding UTF8 .gitignore
