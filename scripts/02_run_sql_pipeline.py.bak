@@ -1,0 +1,86 @@
+"""
+02_run_sql_pipeline.py
+Exécute les scripts sql/*.sql dans l'ordre numérique, et s'arrête à la
+première erreur. Reflète la convention établie sur CARTHAB : les fichiers
+numérotés existants ne sont jamais modifiés ; un correctif va dans un nouveau
+fichier (ex. 03b_fix_parite.sql), jamais en remplaçant un fichier déjà validé.
+
+Usage :
+    python scripts/02_run_sql_pipeline.py                       # exécute tout
+    python scripts/02_run_sql_pipeline.py --from 04             # reprend à partir du fichier 04_*
+    python scripts/02_run_sql_pipeline.py --only 07             # exécute uniquement le fichier 07_*
+    python scripts/02_run_sql_pipeline.py --to 09               # s'arrête après le fichier 09_*
+    python scripts/02_run_sql_pipeline.py --from 07 --to 09     # exécute 07, 08, 09 uniquement
+"""
+import argparse
+import sys
+from pathlib import Path
+from sqlalchemy import text
+from utils.db import get_engine
+
+ROOT    = Path(__file__).resolve().parents[1]
+SQL_DIR = ROOT / "sql"
+
+
+def sql_files():
+    return sorted(SQL_DIR.glob("*.sql"), key=lambda p: p.name)
+
+
+def clean_statement(raw: str) -> str:
+    """Retire les lignes de commentaire ('-- ...') et renvoie le reste, ou ''
+    s'il ne reste aucune instruction exécutable."""
+    lines = [ln for ln in raw.splitlines() if not ln.strip().startswith("--")]
+    return "\n".join(lines).strip()
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--from", dest="from_prefix", default=None,
+                        help="Préfixe de départ — ex. 04 (inclus)")
+    parser.add_argument("--to",   dest="to_prefix",   default=None,
+                        help="Préfixe d'arrêt   — ex. 09 (inclus)")
+    parser.add_argument("--only", dest="only_prefix", default=None,
+                        help="Exécuter un seul fichier — ex. 07")
+    args = parser.parse_args()
+
+    files = sql_files()
+
+    if args.only_prefix:
+        files = [f for f in files if f.name.startswith(args.only_prefix)]
+    else:
+        if args.from_prefix:
+            files = [f for f in files if f.name >= args.from_prefix]
+        if args.to_prefix:
+            # Inclure tous les fichiers dont le préfixe numérique est ≤ to_prefix
+            # Ex: --to 09 inclut 09_xxx.sql mais pas 10_xxx.sql
+            files = [f for f in files if f.name[:len(args.to_prefix)] <= args.to_prefix]
+
+    if not files:
+        print("Aucun fichier SQL trouvé pour ces critères.")
+        sys.exit(1)
+
+    print(f"Fichiers à exécuter ({len(files)}) :")
+    for f in files:
+        print(f"  {f.name}")
+    print()
+
+    engine = get_engine()
+    for f in files:
+        print(f"--- {f.name} ---")
+        sql        = f.read_text(encoding="utf-8")
+        statements = [clean_statement(s) for s in sql.split(";")]
+        statements = [s for s in statements if s]
+        with engine.begin() as conn:
+            try:
+                for statement in statements:
+                    conn.execute(text(statement))
+            except Exception as e:
+                print(f"[ERREUR] {f.name} : {e}")
+                sys.exit(1)
+        print(f"[ok] {f.name}")
+
+    print("\nPipeline SQL terminé sans erreur.")
+
+
+if __name__ == "__main__":
+    main()
