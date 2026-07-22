@@ -1,0 +1,23 @@
+version: "3.8"
+
+# Lance un serveur PostgreSQL + PostGIS local, isolé, pour le projet UTI.
+# Démarrage : docker compose up -d
+# Arrêt     : docker compose down        (les données restent dans le volume)
+# Reset     : docker compose down -v     (efface tout, repart de zéro)
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: uti_montreal_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: uti_montreal
+      POSTGRES_USER: ndoune
+      POSTGRES_PASSWORD: changer_moi
+    ports:
+      - "5432:5432"
+    volumes:
+      - uti_pgdata:/var/lib/postgresql/data
+
+volumes:
+  uti_pgdata:

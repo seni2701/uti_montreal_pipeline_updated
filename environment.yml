@@ -1,0 +1,22 @@
+name: uti-montreal
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - geopandas>=0.14
+  - fiona
+  - shapely>=2.0
+  - pyproj
+  - gdal
+  - psycopg2
+  - sqlalchemy>=2.0
+  - geoalchemy2
+  - pandas
+  - numpy
+  - networkx
+  - click
+  - python-dotenv
+  - tqdm
+  - pip
+  - pip:
+      - pgcli
