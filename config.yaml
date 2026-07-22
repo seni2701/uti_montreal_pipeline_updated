@@ -1,0 +1,118 @@
+# ============================================================================
+# config.yaml — Pipeline UTI Montréal (IAER Solutions / Treevans 2026)
+# ----------------------------------------------------------------------------
+# RÈGLE : `sources_brutes` est un dictionnaire PLAT. Une clé n'y apparaît
+# qu'UNE SEULE FOIS. Les commentaires de section n'ont aucune portée technique
+# et ne créent pas de sous-espaces de noms : une clé dupliquée sous une autre
+# section écrase silencieusement la première (YAML : last-wins, sans erreur).
+# Les couches partagées entre livrables sont donc regroupées dans SOCLE COMMUN.
+# ============================================================================
+
+crs:
+  target_epsg: 2950          # NAD83 / MTM zone 8 — format de livraison du contrat
+
+arrondissement_pilote: "Verdun"
+
+# ----------------------------------------------------------------------------
+# Paramètres réglementaires
+# ----------------------------------------------------------------------------
+# ATTENTION : ces valeurs ne sont PAS toutes fondées réglementairement.
+# Le volet hydroélectrique n'utilise AUCUNE valeur d'ici : ses largeurs sont
+# lues exclusivement dans uti.t2h_elec_regles_degagement (table opposable,
+# avec colonne `statut` et `source_reference`).
+# ----------------------------------------------------------------------------
+buffer_hydrique_m:     30    # RCG 24-008 — à confirmer sur le texte réglementaire
+tolerance_adresses_m:   5    # tolérance de rattachement adresses ↔ tronçon
+buffer_ferroviaire_m:  30    # HYPOTHÈSE de travail — non validée
+# buffer_energetique_m: 15   # RETIRÉ — aucun fondement réglementaire.
+#                            # La largeur d'emprise HT varie selon la tension.
+#                            # Voir uti.t2h_elec_regles_degagement.
+
+
+# ============================================================================
+# Fichiers sources — dictionnaire PLAT, aucune clé dupliquée
+# ============================================================================
+sources_brutes:
+
+  # --------------------------------------------------------------------------
+  # SOCLE COMMUN — partagé par TOUS les livrables (déclaré ici, et ici seul)
+  # --------------------------------------------------------------------------
+  cadastre:            "data/raw/cadastre_mtl.shp"
+  troncon:             "data/raw/troncon_mtl.shp"
+  zonage:              "data/raw/zonage_mtl.shp"
+  batiments:           "data/raw/bat_toit_mtl.shp"
+  limites_admin:       "data/raw/limites_administratives_agglo_mtl.shp"
+
+  # --------------------------------------------------------------------------
+  # LIVRABLE A — UTI Routières
+  # --------------------------------------------------------------------------
+  reseau_routier:      "data/raw/reseau_routier_mtl.shp"
+  reseau_cyclable:     "data/raw/reseau_cyclable_mtl.shp"
+  voirie_active:       "data/raw/actifs_de_voirie_mtl.shp"
+  adresses:            "data/raw/adresses_mtl.shp"
+  ruelles_vertes:      "data/raw/ruelles_vertes_mtl.shp"
+  conditions_ruelles:  "data/raw/condition_ruelles_mtl.shp"
+  collisions_routieres:        "data/raw/collisions_routieres.shp"
+  signalisation_stationnement: "data/raw/signalisation_stationnement.shp"
+  chantier_routier:            "data/raw/chantier_routier.shp"
+
+  # Côtés de rue — 95 960 points, attributs COT_RUE_ID / ID_TRC / COTE / SENS_CIR.
+  # RECLASSÉ : ce fichier n'a AUCUN attribut électrique. Ce ne sont pas des
+  # poteaux de distribution. Jointure ATTRIBUTAIRE sur ID_TRC (jamais spatiale).
+  # CRS source : EPSG:32188 (≠ 2950) — reprojection obligatoire au chargement.
+  poles:               "data/raw/poles_mtl.shp"
+
+  # Arbres — le shapefile est un extrait CORROMPU (5 275 lignes).
+  # La source autoritaire est le CSV complet (334 485 lignes, séparateur ';',
+  # Coord_X / Coord_Y en EPSG:2950). Voir le script de chargement dédié.
+  arbres_publics:      "data/raw/arbres_public_mtl.shp"
+
+  # --------------------------------------------------------------------------
+  # LIVRABLE B — UTI Hydriques (T2H, volet hydrique)
+  # --------------------------------------------------------------------------
+  hydro_cours_eau:       "data/raw/hydro_cours_eau.shp"        # À TÉLÉCHARGER
+  hydro_milieux_humides: "data/raw/milieux_humides.shp"
+  hydro_rives:           "data/raw/hydro_rives.shp"            # À TÉLÉCHARGER
+
+  # --------------------------------------------------------------------------
+  # LIVRABLE C — UTI Ferroviaires
+  # --------------------------------------------------------------------------
+  ferro_lignes:        "data/raw/ReseauFerroviaire.shp"
+  ferro_gares:         "data/raw/ferro_gares_mtl.shp"          # À TÉLÉCHARGER
+  ferro_cours_triage:  "data/raw/ferro_cours_triage.shp"       # À TÉLÉCHARGER
+
+  # --------------------------------------------------------------------------
+  # LIVRABLE D — UTI Hydroélectriques (T2H, volet électrique)
+  # --------------------------------------------------------------------------
+  # Source : Ville de Montréal, « Lignes de transport électrique » (2020, CC-BY)
+  # Aucun attribut de tension dans la source → buffers TRANSPORT non justifiables
+  # tant que la tension n'est pas obtenue (HQ TransÉnergie ou recoupement validé).
+  elec_axe_transport:  "data/raw/CARTO_SER_ELE_TEL_AERIEN.shp"  # 160 lignes
+  elec_pylones:        "data/raw/CARTO_SER_ELECTRICITE.shp"     # 1 005 POLYGONES
+  affectation_pum:     "data/raw/affectation_pum2050.shp" # PUM 2050 (24-017) 
+  role_foncier:        "data/raw/uev_mtl.shp"             # unités d'évaluation 
+  elec_emprises_hq:    "data/raw/travaux_degagement_transport_electrique.shp"
+
+  # Source : Hydro-Québec — LICENCE CC BY-NC 4.0 (usage non commercial).
+  # RÉSERVE JURIDIQUE À LEVER avant toute exploitation dans une prestation.
+  # Fichier ABSENT de data/raw/ au 2026-07-13.
+
+
+  # SUPPRIMÉ : elec_poteaux_distrib -> "data/raw/poles_mtl.shp"
+  #   Erreur de classement. poles_mtl.shp est la géobase des CÔTÉS DE RUE
+  #   (Livrable A), pas un réseau de distribution électrique.
+  #   CONSÉQUENCE : le corpus ne contient AUCUNE donnée de réseau de
+  #   distribution. Les règles VALIDE de uti.t2h_elec_regles_degagement
+  #   (déboisement 5 m / 6,5 m) n'ont donc rien à quoi s'appliquer.
+
+
+# ============================================================================
+# Sorties finales
+# ============================================================================
+sorties:
+  # Livrable A — couche maîtresse consolidée (couche_combinee_uti_dedoublonnee.py)
+  uti_routieres_gpkg:        "data/processed/UTI_Routieres.gpkg"
+  uti_routieres_detail_gpkg: "data/processed/UTI_Routieres_detail.gpkg"
+  uti_hydriques_gpkg:        "data/processed/UTI_Hydriques.gpkg"        # Livrable B
+  uti_ferroviaires_gpkg:     "data/processed/UTI_Ferroviaires.gpkg"     # Livrable C
+  uti_hydroelectriques_gpkg: "data/processed/UTI_Hydroelectriques.gpkg" # Livrable D
